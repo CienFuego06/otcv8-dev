@@ -17,6 +17,12 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.2
       id: setup_msbuild
 
+    - name: Pre-download 7zip (7-zip.org 404 workaround)
+      run: |
+        New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}/vcpkg/downloads" | Out-Null
+        Invoke-WebRequest -Uri "https://sourceforge.net/projects/sevenzip/files/7-Zip/21.07/7z2107-extra.7z/download" -OutFile "${{ runner.workspace }}/vcpkg/downloads/7z2107-extra.7z"
+
+
     - name: Run vcpkg
       uses: lukka/run-vcpkg@v7
       with:
