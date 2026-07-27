@@ -32,6 +32,7 @@
 
 #define LUA_LIB
 
+#include <climits>
 extern "C" {
 #if defined(_MSC_VER) || defined(ANDROID)
 #include <luajit/lua.h>
