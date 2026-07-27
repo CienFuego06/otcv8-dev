@@ -22,7 +22,9 @@ jobs:
         $toolDir = "${{ runner.workspace }}/vcpkg/downloads/tools/7zip-21.07-windows"
         New-Item -ItemType Directory -Force -Path $toolDir | Out-Null
         Copy-Item "C:\Program Files\7-Zip\7z.exe" -Destination "$toolDir\7za.exe" -Force
-    - name: Run vcpkg
+        Copy-Item "C:\Program Files\7-Zip\7z.dll" -Destination "$toolDir\7z.dll" -Force
+        & "$toolDir\7za.exe"
+- name: Run vcpkg
       uses: lukka/run-vcpkg@v7
       with:
         vcpkgDirectory: ${{ runner.workspace }}/vcpkg/
