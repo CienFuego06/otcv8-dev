@@ -37,6 +37,7 @@ jobs:
     - name: Integrate vcpkg
       run: |
         ${{ runner.workspace }}/vcpkg/vcpkg integrate install
+        Get-ChildItem -Path "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib" | Format-Table Name
         
     - name: Compile otclient_dx
       timeout-minutes: 20
