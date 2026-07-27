@@ -33,7 +33,18 @@
 #include <regex>
 
 #if not(defined(ANDROID) || defined(FREE_VERSION))
-#include <boost/process.hpp>
+#if defined(WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/wait.h>
+#endif
 #endif
 #include <locale>
 #include <zlib.h>
@@ -128,14 +139,42 @@ bool ResourceManager::launchCorrect(const std::string& product, const std::strin
     if (binary == m_binaryPath)
         return false;
 
-    boost::process::child c(binary.string());
-    std::error_code ec2;
-    if (c.wait_for(std::chrono::seconds(5), ec2)) {
-        return c.exit_code() == 0;
-    }
-
-    c.detach();
-    return true;
+    #if defined(WIN32)
+        std::string cmdLine = "\"" + binary.string() + "\"";
+        std::vector<char> cmdBuf(cmdLine.begin(), cmdLine.end());
+        cmdBuf.push_back('\0');
+        STARTUPINFOA si = { sizeof(si) };
+        PROCESS_INFORMATION pi = {};
+        if (!CreateProcessA(NULL, cmdBuf.data(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+                    return false;
+        DWORD waitResult = WaitForSingleObject(pi.hProcess, 5000);
+        if (waitResult == WAIT_OBJECT_0) {
+                    DWORD exitCode = 1;
+                    GetExitCodeProcess(pi.hProcess, &exitCode);
+                    CloseHandle(pi.hThread);
+                    CloseHandle(pi.hProcess);
+                    return exitCode == 0;
+        }
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+        return true;
+    #else
+        pid_t pid = fork();
+        if (pid == 0) {
+                    execlp(binary.string().c_str(), binary.string().c_str(), (char*)NULL);
+                    _exit(1);
+        } else if (pid < 0) {
+                    return false;
+        }
+        for (int i = 0; i < 500; ++i) {
+                    int status = 0;
+                    pid_t res = waitpid(pid, &status, WNOHANG);
+                    if (res == pid)
+                                    return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+                    usleep(10000);
+        }
+        return true;
+    #endif
 #else
     return false;
 #endif
