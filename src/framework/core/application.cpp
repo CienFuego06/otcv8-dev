@@ -34,7 +34,18 @@
 #include <framework/http/http.h>
 
 #if not(defined(ANDROID) || defined(FREE_VERSION))
-#include <boost/process.hpp>
+#if defined(WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/wait.h>
+#endif
 #endif
 
 #include <locale>
@@ -183,31 +194,69 @@ void Application::close()
 void Application::restart()
 {
 #if not(defined(ANDROID) || defined(FREE_VERSION))
-    boost::process::child c(g_resources.getBinaryName());
-    std::error_code ec2;
-    if (c.wait_for(std::chrono::seconds(1), ec2)) {
-        g_logger.fatal("Updater restart error. Please restart application");
-    }
-    c.detach();
-    quick_exit();
-#else
-    exit();
-#endif
+    #if defined(WIN32)
+        std::string cmdLine = "\"" + g_resources.getBinaryName() + "\"";
+        std::vector<char> cmdBuf(cmdLine.begin(), cmdLine.end());
+        cmdBuf.push_back('\0');
+        STARTUPINFOA si = { sizeof(si) };
+        PROCESS_INFORMATION pi = {};
+        if (!CreateProcessA(NULL, cmdBuf.data(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+                    g_logger.fatal("Updater restart error. Please restart application");
+        } else {
+                    CloseHandle(pi.hThread);
+                    CloseHandle(pi.hProcess);
+        }
+    #else
+        pid_t pid = fork();
+        if (pid == 0) {
+                    execlp(g_resources.getBinaryName().c_str(), g_resources.getBinaryName().c_str(), (char*)NULL);
+                    _exit(1);
+        } else if (pid < 0) {
+                    g_logger.fatal("Updater restart error. Please restart application");
+        }
+    #endif
+        quick_exit();
+    #else
+        exit();
+    #endif
 }
 
 void Application::restartArgs(const std::vector<std::string>& args)
 {
 #if not(defined(ANDROID) || defined(FREE_VERSION))
-    boost::process::child c(g_resources.getBinaryName(), boost::process::args(args));
-    std::error_code ec2;
-    if (c.wait_for(std::chrono::seconds(1), ec2)) {
-        g_logger.fatal("Updater restart error. Please restart application");
-    }
-    c.detach();
-    quick_exit();
-#else
-    exit();
-#endif
+    #if defined(WIN32)
+        std::string cmdLine = "\"" + g_resources.getBinaryName() + "\"";
+        for (const auto& arg : args)
+                    cmdLine += " \"" + arg + "\"";
+        std::vector<char> cmdBuf(cmdLine.begin(), cmdLine.end());
+        cmdBuf.push_back('\0');
+        STARTUPINFOA si = { sizeof(si) };
+        PROCESS_INFORMATION pi = {};
+        if (!CreateProcessA(NULL, cmdBuf.data(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+                    g_logger.fatal("Updater restart error. Please restart application");
+        } else {
+                    CloseHandle(pi.hThread);
+                    CloseHandle(pi.hProcess);
+        }
+    #else
+        std::string binaryName = g_resources.getBinaryName();
+        std::vector<char*> argv;
+        argv.push_back(const_cast<char*>(binaryName.c_str()));
+        for (const auto& arg : args)
+                    argv.push_back(const_cast<char*>(arg.c_str()));
+        argv.push_back(nullptr);
+        pid_t pid = fork();
+        if (pid == 0) {
+                    execvp(binaryName.c_str(), argv.data());
+                    _exit(1);
+        } else if (pid < 0) {
+                    g_logger.fatal("Updater restart error. Please restart application");
+        }
+    #endif
+                quick_exit();
+    #else
+        exit();
+    #endif
 }
 
 std::string Application::getOs()
