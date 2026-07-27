@@ -19,10 +19,11 @@ jobs:
 
     - name: Pre-download 7zip (7-zip.org 404 workaround)
       run: |
+        $toolDir = "${{ runner.workspace }}/vcpkg/downloads/tools/7zip-21.07-windows"
         New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}/vcpkg/downloads" | Out-Null
+        New-Item -ItemType Directory -Force -Path $toolDir | Out-Null
         Invoke-WebRequest -Uri "https://sourceforge.net/projects/sevenzip/files/7-Zip/21.07/7z2107-extra.7z/download" -OutFile "${{ runner.workspace }}/vcpkg/downloads/7z2107-extra.7z"
-
-
+        & "C:\Program Files\7-Zip\7z.exe" x "${{ runner.workspace }}/vcpkg/downloads/7z2107-extra.7z" -o"$toolDir" -y
     - name: Run vcpkg
       uses: lukka/run-vcpkg@v7
       with:
