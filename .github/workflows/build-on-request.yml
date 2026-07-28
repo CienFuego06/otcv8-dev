@@ -42,9 +42,38 @@ jobs:
         & "${{ runner.workspace }}/vcpkg/vcpkg" install boost-iostreams boost-asio boost-beast boost-system boost-variant boost-lockfree boost-process boost-program-options boost-uuid boost-filesystem luajit glew physfs openal-soft libogg libvorbis zlib libzip bzip2 openssl --triplet x86-windows-static --recurse
 
     - name: Integrate vcpkg
+      shell: pwsh
       run: |
-        ${{ runner.workspace }}/vcpkg/vcpkg integrate install
-        Get-ChildItem -Path "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib" -Filter "*zlib*" | Format-Table Name
+        & "${{ runner.workspace }}/vcpkg/vcpkg" integrate install
+        Write-Host "=== Full lib folder listing ==="
+        Get-ChildItem -Path "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib" | Format-Table Name
+        Write-Host "=== zlib package file manifest (vcpkg info) ==="
+        Get-ChildItem -Path "${{ runner.workspace }}/vcpkg/installed/vcpkg/info" -Filter "zlib_*" | ForEach-Object { Write-Host $_.Name; Get-Content $_.FullName }
+        Write-Host "=== vcpkg list zlib ==="
+        & "${{ runner.workspace }}/vcpkg/vcpkg" list zlib
+        Write-Host "=== zlib.lib fallback repair ==="
+        $libDir = "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib"
+        $zlibLib = Join-Path $libDir "zlib.lib"
+        if (-not (Test-Path $zlibLib)) {
+          $names = @("zlibstatic.lib", "zlibstat.lib", "zdll.lib", "z.lib", "libz.lib", "libzlib.lib")
+          $candidate = $null
+          foreach ($n in $names) {
+            $p = Join-Path $libDir $n
+            if (Test-Path $p) { $candidate = $p; break }
+          }
+          if (-not $candidate) {
+            $match = Get-ChildItem -Path $libDir -Filter "*.lib" | Where-Object { $_.Name -match "^z" -or $_.Name -match "zlib" } | Select-Object -First 1
+            if ($match) { $candidate = $match.FullName }
+          }
+          if ($candidate) {
+            Write-Host "zlib.lib missing, copying candidate: $candidate"
+            Copy-Item $candidate -Destination $zlibLib -Force
+          } else {
+            Write-Host "No zlib-like candidate found in lib folder."
+          }
+        } else {
+          Write-Host "zlib.lib already present."
+        }
 
     - name: Compile otclient_dx
       timeout-minutes: 20
