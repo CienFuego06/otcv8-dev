@@ -36,17 +36,6 @@ jobs:
         New-Item -ItemType Directory -Force -Path $toolDir | Out-Null
         Copy-Item "C:\Program Files\7-Zip\7z.exe" -Destination "$toolDir\7za.exe" -Force
 
-    - name: Pin vcpkg triplet to v142 toolset (match project toolset)
-      shell: pwsh
-      run: |
-        $tripletFile = "${{ runner.workspace }}/vcpkg/triplets/community/x86-windows-static.cmake"
-        if (-not (Test-Path $tripletFile)) {
-          $tripletFile = "${{ runner.workspace }}/vcpkg/triplets/x86-windows-static.cmake"
-        }
-        Write-Host "Using triplet file: $tripletFile"
-        Add-Content -Path $tripletFile -Value "`nset(VCPKG_PLATFORM_TOOLSET v142)"
-        Get-Content $tripletFile
-
     - name: Run vcpkg install
       shell: pwsh
       run: |
@@ -90,13 +79,13 @@ jobs:
       timeout-minutes: 20
       run: |
         cd vc16
-        MSBuild /property:Configuration=DirectX /p:BUILD_REVISION=${{github.run_number}}
+        MSBuild /property:Configuration=DirectX /p:PlatformToolset=v143 /p:BUILD_REVISION=${{github.run_number}}
 
     - name: Compile otclient_gl
       timeout-minutes: 20
       run: |
         cd vc16
-        MSBuild /property:Configuration=OpenGL /p:BUILD_REVISION=${{github.run_number}}
+        MSBuild /property:Configuration=OpenGL /p:PlatformToolset=v143 /p:BUILD_REVISION=${{github.run_number}}
 
     #- name: Sign binaries
     #  run: |
