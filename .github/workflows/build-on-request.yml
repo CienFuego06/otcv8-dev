@@ -38,8 +38,9 @@ jobs:
       run: |
         ${{ runner.workspace }}/vcpkg/vcpkg integrate install
         Get-ChildItem -Path "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib" | Format-Table Name
-        ${{ runner.workspace }}/vcpkg/vcpkg remove zlib:x86-windows-static
-        ${{ runner.workspace }}/vcpkg/vcpkg install zlib:x86-windows-static --recurse
+        $env:VCPKG_BINARY_SOURCES = "clear"
+    ${{ runner.workspace }}/vcpkg/vcpkg remove zlib:x86-windows-static --recurse
+    ${{ runner.workspace }}/vcpkg/vcpkg install zlib:x86-windows-static boost-iostreams:x86-windows-static libzip:x86-windows-static --recurse
         Get-ChildItem -Path "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib" -Filter "*zlib*" | Format-Table Name
         
     - name: Compile otclient_dx
