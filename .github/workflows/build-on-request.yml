@@ -17,29 +17,34 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.2
       id: setup_msbuild
 
+    - name: Clone and bootstrap vcpkg
+      shell: pwsh
+      run: |
+        $vcpkgDir = "${{ runner.workspace }}/vcpkg"
+        if (-not (Test-Path "$vcpkgDir/.git")) {
+          git clone https://github.com/microsoft/vcpkg.git $vcpkgDir
+        }
+        Push-Location $vcpkgDir
+        git fetch origin 3b3bd424827a1f7f4813216f6b32b6c61e386b2e
+        git checkout 3b3bd424827a1f7f4813216f6b32b6c61e386b2e
+        Pop-Location
+        & "$vcpkgDir/bootstrap-vcpkg.bat"
+
     - name: Provide 7zip for vcpkg (7-zip.org 404 workaround)
+      shell: pwsh
       run: |
         $toolDir = "${{ runner.workspace }}/vcpkg/downloads/tools/7zip-21.07-windows"
         New-Item -ItemType Directory -Force -Path $toolDir | Out-Null
         Copy-Item "C:\Program Files\7-Zip\7z.exe" -Destination "$toolDir\7za.exe" -Force
 
-    - name: Run vcpkg
-      uses: lukka/run-vcpkg@v7
-      with:
-        vcpkgDirectory: ${{ runner.workspace }}/vcpkg/
-        vcpkgTriplet: x86-windows-static
-        vcpkgGitCommitId: 3b3bd424827a1f7f4813216f6b32b6c61e386b2e
-        vcpkgArguments: >
-          boost-iostreams boost-asio boost-beast boost-system boost-variant boost-lockfree boost-process boost-program-options boost-uuid boost-filesystem
-          luajit glew physfs openal-soft libogg libvorbis zlib libzip bzip2 openssl
+    - name: Run vcpkg install
+      shell: pwsh
+      run: |
+        & "${{ runner.workspace }}/vcpkg/vcpkg" install boost-iostreams boost-asio boost-beast boost-system boost-variant boost-lockfree boost-process boost-program-options boost-uuid boost-filesystem luajit glew physfs openal-soft libogg libvorbis zlib libzip bzip2 openssl --triplet x86-windows-static --recurse
 
     - name: Integrate vcpkg
       run: |
         ${{ runner.workspace }}/vcpkg/vcpkg integrate install
-        Get-ChildItem -Path "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib" | Format-Table Name
-        $env:VCPKG_BINARY_SOURCES = "clear"
-        ${{ runner.workspace }}/vcpkg/vcpkg remove zlib:x86-windows-static --recurse
-        ${{ runner.workspace }}/vcpkg/vcpkg install zlib:x86-windows-static boost-iostreams:x86-windows-static libzip:x86-windows-static --recurse
         Get-ChildItem -Path "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib" -Filter "*zlib*" | Format-Table Name
 
     - name: Compile otclient_dx
