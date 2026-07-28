@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
@@ -17,12 +17,13 @@
         AB;
         NOMINMAX;
     </PREPROCESSOR_DEFS>
-    
+
     <OTCLIENT_LIBDEPS>
         zlib.lib;
         libssl.lib;
         physfs-static.lib;
         winmm.lib;
+        avrt.lib;
         lua51.lib;
         dbghelp.lib;
         kernel32.lib;
@@ -32,12 +33,12 @@
         advapi32.lib;
     		Ole32.lib;
         psapi.lib;
-        bcrypt.lib;		
+        bcrypt.lib;
         ucrt.lib;
         vcruntime.lib;
         msvcrt.lib;
         mincore_downlevel.lib;
-        mincore.lib;    
+        mincore.lib;
     </OTCLIENT_LIBDEPS>
   </PropertyGroup>
   <PropertyGroup>
@@ -54,7 +55,7 @@
       $(PREPROCESSOR_DEFS);
       BUILD_REVISION=$(BUILD_REVISION)
     </PREPROCESSOR_DEFS>
-  </PropertyGroup>  
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
