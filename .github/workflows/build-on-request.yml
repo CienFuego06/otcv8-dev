@@ -47,32 +47,32 @@ jobs:
         & "${{ runner.workspace }}/vcpkg/vcpkg" integrate install
         Write-Host "=== Full lib folder listing ==="
         Get-ChildItem -Path "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib" | Format-Table Name
-        Write-Host "=== zlib package file manifest (vcpkg info) ==="
-        Get-ChildItem -Path "${{ runner.workspace }}/vcpkg/installed/vcpkg/info" -Filter "zlib_*" | ForEach-Object { Write-Host $_.Name; Get-Content $_.FullName }
-        Write-Host "=== vcpkg list zlib ==="
-        & "${{ runner.workspace }}/vcpkg/vcpkg" list zlib
-        Write-Host "=== zlib.lib fallback repair ==="
+        Write-Host "=== lib alias repair (vcpkg renames some static libs) ==="
         $libDir = "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib"
-        $zlibLib = Join-Path $libDir "zlib.lib"
-        if (-not (Test-Path $zlibLib)) {
-          $names = @("zlibstatic.lib", "zlibstat.lib", "zdll.lib", "z.lib", "libz.lib", "libzlib.lib")
-          $candidate = $null
-          foreach ($n in $names) {
+        $aliases = @{
+          "zlib.lib"          = @("zlibstatic.lib", "zlibstat.lib", "zdll.lib", "z.lib", "libz.lib", "libzlib.lib")
+          "glew32.lib"        = @("libglew32.lib", "glew32s.lib", "libglew32s.lib", "glew.lib", "libglew.lib")
+          "physfs-static.lib" = @("physfs.lib", "libphysfs.lib", "physfs_static.lib")
+          "lua51.lib"         = @("luajit.lib", "lua51-static.lib", "libluajit.lib", "lua.lib")
+          "libssl.lib"        = @("ssl.lib", "libssl_static.lib")
+        }
+        foreach ($target in $aliases.Keys) {
+          $targetPath = Join-Path $libDir $target
+          if (Test-Path $targetPath) {
+            Write-Host "OK: $target already present."
+            continue
+          }
+          $found = $null
+          foreach ($n in $aliases[$target]) {
             $p = Join-Path $libDir $n
-            if (Test-Path $p) { $candidate = $p; break }
+            if (Test-Path $p) { $found = $p; break }
           }
-          if (-not $candidate) {
-            $match = Get-ChildItem -Path $libDir -Filter "*.lib" | Where-Object { $_.Name -match "^z" -or $_.Name -match "zlib" } | Select-Object -First 1
-            if ($match) { $candidate = $match.FullName }
-          }
-          if ($candidate) {
-            Write-Host "zlib.lib missing, copying candidate: $candidate"
-            Copy-Item $candidate -Destination $zlibLib -Force
+          if ($found) {
+            Write-Host "MISSING $target -> copying from $(Split-Path $found -Leaf)"
+            Copy-Item $found -Destination $targetPath -Force
           } else {
-            Write-Host "No zlib-like candidate found in lib folder."
+            Write-Host "WARNING: $target missing and no known alias found."
           }
-        } else {
-          Write-Host "zlib.lib already present."
         }
 
     - name: Compile otclient_dx
