@@ -50,7 +50,7 @@ jobs:
         Write-Host "=== lib alias repair (vcpkg renames some static libs) ==="
         $libDir = "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib"
         $aliases = @{
-          "zlib.lib"          = @("zlibstatic.lib", "zlibstat.lib", "zdll.lib", "z.lib", "libz.lib", "libzlib.lib")
+          "zlib.lib"          = @("zs.lib", "zlibstatic.lib", "zlibstat.lib", "zdll.lib", "z.lib", "libz.lib", "libzlib.lib")
           "glew32.lib"        = @("libglew32.lib", "glew32s.lib", "libglew32s.lib", "glew.lib", "libglew.lib")
           "physfs-static.lib" = @("physfs.lib", "libphysfs.lib", "physfs_static.lib")
           "lua51.lib"         = @("luajit.lib", "lua51-static.lib", "libluajit.lib", "lua.lib")
