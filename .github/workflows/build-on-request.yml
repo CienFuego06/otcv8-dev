@@ -22,14 +22,13 @@ jobs:
         $toolDir = "${{ runner.workspace }}/vcpkg/downloads/tools/7zip-21.07-windows"
         New-Item -ItemType Directory -Force -Path $toolDir | Out-Null
         Copy-Item "C:\Program Files\7-Zip\7z.exe" -Destination "$toolDir\7za.exe" -Force
-        Copy-Item "C:\Program Files\7-Zip\7z.dll" -Destination "$toolDir\7z.dll" -Force
-        & "$toolDir\7za.exe"
+
     - name: Run vcpkg
       uses: lukka/run-vcpkg@v7
       with:
         vcpkgDirectory: ${{ runner.workspace }}/vcpkg/
         vcpkgTriplet: x86-windows-static
-        vcpkgGitCommitId: cd61e1e26a038e82d6550a3ebbe0fbbfe7da78e3
+        vcpkgGitCommitId: 3b3bd424827a1f7f4813216f6b32b6c61e386b2e
         vcpkgArguments: >
           boost-iostreams boost-asio boost-beast boost-system boost-variant boost-lockfree boost-process boost-program-options boost-uuid boost-filesystem
           luajit glew physfs openal-soft libogg libvorbis zlib libzip bzip2 openssl
@@ -39,16 +38,16 @@ jobs:
         ${{ runner.workspace }}/vcpkg/vcpkg integrate install
         Get-ChildItem -Path "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib" | Format-Table Name
         $env:VCPKG_BINARY_SOURCES = "clear"
-    ${{ runner.workspace }}/vcpkg/vcpkg remove zlib:x86-windows-static --recurse
-    ${{ runner.workspace }}/vcpkg/vcpkg install zlib:x86-windows-static boost-iostreams:x86-windows-static libzip:x86-windows-static --recurse
+        ${{ runner.workspace }}/vcpkg/vcpkg remove zlib:x86-windows-static --recurse
+        ${{ runner.workspace }}/vcpkg/vcpkg install zlib:x86-windows-static boost-iostreams:x86-windows-static libzip:x86-windows-static --recurse
         Get-ChildItem -Path "${{ runner.workspace }}/vcpkg/installed/x86-windows-static/lib" -Filter "*zlib*" | Format-Table Name
-        
+
     - name: Compile otclient_dx
       timeout-minutes: 20
       run: |
         cd vc16
         MSBuild /property:Configuration=DirectX /p:BUILD_REVISION=${{github.run_number}}
-        
+
     - name: Compile otclient_gl
       timeout-minutes: 20
       run: |
@@ -117,7 +116,7 @@ jobs:
 
   Mac:
     name: Build mac os version
-    runs-on: 	macos-11
+    runs-on: macos-11
     timeout-minutes: 120
 
     steps:
@@ -136,7 +135,7 @@ jobs:
       uses: lukka/run-vcpkg@v7
       with:
         vcpkgArguments: >
-          boost-iostreams boost-asio boost-system boost-variant boost-lockfree boost-beast glew 
+          boost-iostreams boost-asio boost-system boost-variant boost-lockfree boost-beast glew
           boost-filesystem boost-uuid libogg libvorbis zlib opengl libzip openal-soft bzip2
           boost-process openssl
         vcpkgDirectory: ${{ runner.workspace }}/vcpkg/
@@ -184,7 +183,7 @@ jobs:
       uses: lukka/run-vcpkg@v7
       with:
         vcpkgArguments: >
-          boost-iostreams boost-asio boost-system boost-variant boost-lockfree boost-beast glew 
+          boost-iostreams boost-asio boost-system boost-variant boost-lockfree boost-beast glew
           boost-filesystem boost-uuid libogg libvorbis zlib opengl libzip openal-soft bzip2
           boost-process openssl physfs
         vcpkgDirectory: ${{ runner.workspace }}/vcpkg/
